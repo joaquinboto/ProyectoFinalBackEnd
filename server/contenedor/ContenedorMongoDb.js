@@ -9,11 +9,17 @@ class ContenedorMongo {
 
     async save(obj) {
         const nuevoProducto = new this.model(obj);
+        console.log(nuevoProducto);
         return await nuevoProducto.save();
     }
 
     async getById(id) {
         return this.model.find({_id: new ObjectId(id)});
+    }
+
+    async getByUsername(name) {
+        const user = await this.model.findOne({username: name});
+        return user
     }
 
     async editById(obj, id) {
@@ -23,6 +29,10 @@ class ContenedorMongo {
             { $set: obj }
         )
         return objUpdated
+    }
+
+    async getByEmail(email) {
+        return await this.model.findOne({email: email});
     }
 
     async getAll() {

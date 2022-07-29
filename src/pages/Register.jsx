@@ -1,12 +1,13 @@
 import React from 'react'
 import styled from "styled-components";
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link , useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 
-function Register() {
 
+function Register() {
+    const navigateLogin = useNavigate();
     const [values, setValues] = useState({
         username: "",
         email: "",
@@ -29,7 +30,12 @@ function Register() {
                 email,
                 password,
               })
-              console.log(response);
+             if (response.status === 200) {
+              localStorage.setItem("userApp", JSON.stringify(response.data.user));
+              navigateLogin("/");
+            } else {
+              alert("Error");
+            }
         } else {
           alert("Please fill in all fields");
         }
