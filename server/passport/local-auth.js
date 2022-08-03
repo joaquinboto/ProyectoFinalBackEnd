@@ -3,6 +3,7 @@ const LocalStrategy = require('passport-local').Strategy;
 const User = require('../models/userModel');
 const bcrypt = require('bcrypt');
 
+
 passport.serializeUser((user, done) => {
     done(null, user.id);
 })
@@ -13,51 +14,49 @@ passport.deserializeUser( async (id, done) => {
 })
 
 passport.use('signup', new LocalStrategy(
-    { passReqToCallback: true,
-        sucessRedirect: '/login',
-        failureRedirect: '/register' },
-    (req, username, password, done) => {
-        User.findOne({username}, (err, user) => {
-            if(err) return done(err)
+    { usernameField: 'username',
+     passwordField: 'password' },
+    async (username, password, done) => {
+        try {
+            const user = await User.findOne({ username });
             if (user) {
-                console.log('User already exists')
-                return done(null, false)
+                return done(null, false, { message: 'User already exists' });
             }
-            const hassPassword = bcrypt.hashSync(password, 10)
-            const newUser = { username, password: hassPassword , name: req.body.name }
-            User.create(newUser, (err, userWithID) => {
-                if(err) return done(err)
 
-                console.log("User created" , userWithID)
-                return done(null, userWithID)
-            })
-
-        })
-
+            let pass = password.toString();
+            
+            const newUser = new User({
+                username,
+                password: await bcrypt.hash(pass, 10)
+            });
+            await newUser.save();
+            return done(null, newUser); 
+        } catch (error) {
+            console.log(error);
+        }
     }
 ))
 
 passport.use('login', new LocalStrategy(
-    { passReqToCallback: true ,
-    sucessRedirect: '/',
-    failureRedirect: '/register'},
-    (req, username, password, done) => {
-        User.findOne({username}, (err, user) => {
-            if(err) return done(err)
-            if (!user) {
+    { usernameField: 'username',
+    passwordField: 'password', },
+    async (username, password, done) => {
+       try {
+              const user = await User.findOne({username})
+              if(!user) {
                 console.log('User not found')
                 return done(null, false)
-            }
-
-            const isValidPassword = bcrypt.compareSync(password, user.password)
-            if (!isValidPassword) {
-                console.log('Invalid password')
+              }
+              let pass = password.toString();
+              const isMatch = await bcrypt.compare(pass, user.password)
+              if(!isMatch) {
+                console.log('Password is incorrect')
                 return done(null, false)
-            } else {
-                console.log('User logged in')
-                return done(null, user)
-            }
-
-        })
+              }
+              return done(null, user)
+        
+       } catch (error) {
+              return done(error)
+       }
     }
 ))
